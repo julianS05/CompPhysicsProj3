@@ -9,6 +9,8 @@ def create_adjacency_lattice(rows, cols, periodic=False):
     # defining the interior matrices
     int_mat1 = diags([np.ones(cols-1), np.ones(cols-1)],[-1,1]).toarray()
     int_mat2 = diags([np.ones(cols-1),np.ones(cols),np.ones(cols-1)], [-1,0,1]).toarray()
+    print(int_mat2)
+
 
     # pasting the off-diagonal interior matrices
     for i in range(0, rows*cols-cols, cols):
@@ -21,6 +23,10 @@ def create_adjacency_lattice(rows, cols, periodic=False):
 
     return mat
 
+
+
+
+create_adjacency_lattice(3,3)
 # # print(calc_energy(spins, adj_mat))
 
 # beta = 0.5 # beta = 1/T
