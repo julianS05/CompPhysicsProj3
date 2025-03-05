@@ -2,19 +2,32 @@ import numpy as np
 from GridAdjacencyMatrix import create_adjacency_lattice
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+from IsingAnim import Anim2DGridIsing
 
-# INITIALIZE GRID
-ROWS = 10
-COLS = 10
+# INITIALIZE VARIABLES
+# ------------------------------------------------------------------------------
 
-steps = 5000
+# grid size
+ROWS = 20
+COLS = 20
 
-adj_mat = create_adjacency_lattice(ROWS, COLS)
+# steps to simulate (might change to keep going until equilibrium)
+steps = 1000
 
+# randomly initializing spins for the grid
 lattice_elements = np.random.choice([-1,1], ROWS*COLS)
+
+# arrays to keep track of previous states
 spin_history = np.zeros((steps,ROWS*COLS))
 mag_history = np.zeros(steps)
 
+# making adjacency matrix for 2D grid
+adj_mat = create_adjacency_lattice(ROWS, COLS)
+
+# DEFINING USEFUL FUNCTIONS
+# ------------------------------------------------------------------------------
+
+# used to calculate the total energy of the lattice
 def calc_energy(spins, adj_mat):
     H = 0
     for i in range(len(spins)):
@@ -25,19 +38,26 @@ def calc_energy(spins, adj_mat):
         H += s
     return -H
 
+# used to calculate the magnetization of the lattice
 def calc_magnetization(spins):
     return sum(spins) / len(spins)
 
+# used to calculate the average magnization
 def calc_avg_mag(mag_hist):
     return np.mean(mag_hist)
 
+# MAIN LOOP
+# ------------------------------------------------------------------------------
+
+# calculate the initial lattice energy
 curr_E = calc_energy(lattice_elements, adj_mat)
 
 backwards_theshold = 100 # how many data points in the past you want to use to calculate the average magnetization
 
 avg_mag = np.zeros(steps) 
 
-beta = 0.8
+# inverse temperature
+beta = 0.4
 
 # METROPOLIS LOOP
 for i in range(steps):
@@ -45,39 +65,29 @@ for i in range(steps):
     rand_ind = np.random.randint(0, len(lattice_elements))
     # Flip spin
     lattice_elements[rand_ind] = -lattice_elements[rand_ind]
+    # calculate new energy and change in energy
     new_energy = calc_energy(lattice_elements, adj_mat)
     dE = new_energy-curr_E
 
     if dE < 0 or np.random.rand() < np.exp(-dE*beta):
-        print("accept")
+        # accept the move and update current energy
         curr_E = new_energy
     else:
-        # flip spin back
-        print("flip back")
+        # flip spin back and keep current energy the same
         lattice_elements[rand_ind] = -lattice_elements[rand_ind]
 
+    # store values
     spin_history[i] = lattice_elements
     mag_history[i] = calc_magnetization(lattice_elements)
-    # print(mag_history)
-    if i >= backwards_theshold:
-        avg_mag[i] = calc_avg_mag(mag_history[i-backwards_theshold:i])
+    # if i >= backwards_theshold:
+    #     avg_mag[i] = calc_avg_mag(mag_history[i-backwards_theshold:i])
 
-
-
-
-# fig = plt.figure()
-
-# ims = []
-# for i in range(len(spin_history)):
-#     im = plt.imshow(np.reshape(spin_history[i], (ROWS,COLS), 'C'), cmap='binary', animated=True)
-#     ims.append([im])
-
-# ani = animation.ArtistAnimation(fig, ims, interval=30, blit=True,
-#                                 repeat_delay=1000)
-
-# ani.save('test.mp4')
-
+# print(mag_history)
 
 plt.plot(np.arange(0, steps, 1), mag_history)
-plt.plot(np.arange(0, steps, 1), avg_mag)
+# plt.plot(np.arange(0, steps, 1), avg_mag)
+
+anim = Anim2DGridIsing(ROWS, COLS)
+anim.animate(spin_history).save("test.mp4")
+
 plt.show()
