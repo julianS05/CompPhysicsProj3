@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.sparse import diags
 import matplotlib.animation as animation
+from scipy.sparse import csr_matrix
 
 
 def create_adjacency_lattice(rows, cols, periodic=False):
@@ -20,4 +21,5 @@ def create_adjacency_lattice(rows, cols, periodic=False):
     for i in range(0,rows*cols, cols):
         mat[i:(i+cols),i:(i+cols)]=int_mat1
 
-    return mat
+    return csr_matrix(mat)
+    # return mat
