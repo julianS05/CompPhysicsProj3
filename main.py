@@ -6,6 +6,13 @@ from IsingVisuals import Anim2DGridIsing, show_snapshots
 from numba import jit
 
 
+
+# algorithm for lookup table on the change in energy for number of different spins
+# anti ferromagnetic but changing sign of J
+# conserved ising
+# plot equilibration time scale tau
+
+
 # INITIALIZE VARIABLES
 # ------------------------------------------------------------------------------
 
@@ -14,7 +21,7 @@ ROWS = 50
 COLS = 50
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 150000
+steps = 100000
 
 # randomly initializing spins for the grid
 lattice_elements = np.random.choice([-1,1], ROWS*COLS)
