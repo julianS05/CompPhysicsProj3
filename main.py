@@ -5,6 +5,7 @@ import matplotlib.animation as animation
 from IsingVisuals import Anim2DGridIsing, show_snapshots
 from numba import jit
 
+from test import create_n_dim_adj_mat
 
 
 # algorithm for lookup table on the change in energy for number of different spins
@@ -16,22 +17,26 @@ from numba import jit
 # INITIALIZE VARIABLES
 # ------------------------------------------------------------------------------
 
+# Dimension
+dim = 3
+
 # grid size
-ROWS = 50
-COLS = 50
+ROWS = 15
+COLS = 15
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 100000
+steps = 10000
 
 # randomly initializing spins for the grid
-lattice_elements = np.random.choice([-1,1], ROWS*COLS)
+lattice_elements = np.random.choice([-1,1], np.power(ROWS, dim))
 
 # arrays to keep track of previous states
-spin_history = np.zeros((steps,ROWS*COLS))
+spin_history = np.zeros((steps,np.power(ROWS, dim)))
 mag_history = np.zeros(steps)
 
 # making adjacency matrix for 2D grid
-adj_mat = create_adjacency_lattice(ROWS, COLS)
+# adj_mat = create_adjacency_lattice(ROWS, COLS)
+adj_mat = create_n_dim_adj_mat(dim, ROWS)
 
 # DEFINING USEFUL FUNCTIONS
 # ------------------------------------------------------------------------------
@@ -116,7 +121,7 @@ for i in range(steps):
 
 # print(mag_history)
 
-show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+# show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
 
 plt.plot(np.arange(0, steps, 1), mag_history)
 plt.show()
