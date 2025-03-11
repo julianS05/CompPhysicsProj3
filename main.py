@@ -1,5 +1,5 @@
 import numpy as np
-from GridAdjacencyMatrix import create_adjacency_lattice
+from GridAdjacencyMatrix import create_adjacency_lattice, periodic_adj_lattice
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
 from IsingVisuals import Anim2DGridIsing, show_snapshots
@@ -7,6 +7,7 @@ from numba import jit
 
 from test import create_n_dim_adj_mat
 
+from IsingSimulator import GridIsing2D
 
 # algorithm for lookup table on the change in energy for number of different spins
 # anti ferromagnetic but changing sign of J
@@ -14,29 +15,50 @@ from test import create_n_dim_adj_mat
 # plot equilibration time scale tau
 
 
+
+ROWS, COLS = 20, 20
+steps = 1524
+
+Ising2DGrid = GridIsing2D(ROWS, COLS)
+
+# show_snapshots(spin_hist, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+# plt.plot(np.arange(0, steps, 1), mag_hist)
+# plt.show()
+
+
+mag_temps = []
+temps = np.arange(0.1, 5, 0.1)
+spin_hist1 = np.random.choice([-1,1], ROWS*COLS)
+for t in temps:
+    spin_hist, mag_hist = Ising2DGrid.simulate(steps, t, spin_hist1)
+    mag_temps.append(np.mean(np.abs(mag_hist[-10:-1])))
+    # spin_hist1 = spin_hist
+    print(f"Finished sim for t={t}")
+
+plt.plot(temps, mag_temps)
+plt.show()
+'''
+
 # INITIALIZE VARIABLES
 # ------------------------------------------------------------------------------
 
-# Dimension
-dim = 3
-
 # grid size
-ROWS = 15
-COLS = 15
+ROWS = 50
+COLS = 50
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 10000
+steps = 50000
 
 # randomly initializing spins for the grid
-lattice_elements = np.random.choice([-1,1], np.power(ROWS, dim))
+lattice_elements = np.random.choice([-1,1], ROWS*COLS)
 
 # arrays to keep track of previous states
-spin_history = np.zeros((steps,np.power(ROWS, dim)))
+spin_history = np.zeros((steps,ROWS*COLS))
 mag_history = np.zeros(steps)
 
 # making adjacency matrix for 2D grid
-# adj_mat = create_adjacency_lattice(ROWS, COLS)
-adj_mat = create_n_dim_adj_mat(dim, ROWS)
+adj_mat = periodic_adj_lattice(ROWS, COLS)
+# adj_mat = create_n_dim_adj_mat(dim, ROWS)
 
 # DEFINING USEFUL FUNCTIONS
 # ------------------------------------------------------------------------------
@@ -121,7 +143,7 @@ for i in range(steps):
 
 # print(mag_history)
 
-# show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
 
 plt.plot(np.arange(0, steps, 1), mag_history)
 plt.show()
@@ -131,3 +153,4 @@ plt.show()
 
 # anim = Anim2DGridIsing(ROWS, COLS)
 # anim.animate(spin_history).save("test.mp4")
+'''

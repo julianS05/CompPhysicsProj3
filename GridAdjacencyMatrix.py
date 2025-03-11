@@ -21,5 +21,35 @@ def create_adjacency_lattice(rows, cols, periodic=False):
     for i in range(0,rows*cols, cols):
         mat[i:(i+cols),i:(i+cols)]=int_mat1
 
-    return csr_matrix(mat)
-    # return mat
+        mat[i, i + cols - 1] = 1
+        mat[i + cols - 1, i] = 1
+    
+    for i in range(cols):
+        mat[i, (rows-1)*cols + i] = 1  # Connect first row to last row in the same column
+        mat[(rows-1)*cols + i, i] = 1
+
+    # return csr_matrix(mat)
+    return mat
+
+# plt.matshow(create_adjacency_lattice(5, 5, False))
+# plt.show()
+
+def periodic_adj_lattice(rows, cols):
+    total_nodes = rows * cols
+    adj_mat = np.zeros((total_nodes, total_nodes), dtype=int)
+
+    for i in range(rows):
+        for j in range(cols):
+            node_id = i * cols + j
+
+            adj_mat[node_id, ((i - 1)%rows) * cols + j] = 1
+            adj_mat[node_id, ((i + 1)%rows) * cols + j] = 1
+            adj_mat[node_id, i * cols + ((j - 1)%cols)] = 1
+            adj_mat[node_id, i * cols + ((j + 1)%cols)] = 1
+            adj_mat[node_id, ((i - 1)%rows) * cols + ((j - 1)%cols)] = 1
+            adj_mat[node_id, ((i - 1)%rows) * cols + ((j + 1)%cols)] = 1
+            adj_mat[node_id, ((i + 1)%rows) * cols + ((j + 1)%cols)] = 1
+            adj_mat[node_id, ((i + 1)%rows) * cols + ((j - 1)%cols)] = 1
+    
+    return csr_matrix(adj_mat)
+    # return adj_mat
