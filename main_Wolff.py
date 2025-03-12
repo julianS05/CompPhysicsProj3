@@ -9,11 +9,11 @@ from numba import jit
 # ------------------------------------------------------------------------------
 
 # grid size
-ROWS = 20
-COLS = 20
+ROWS = 30
+COLS = 30
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 50000
+steps = 5000
 
 # randomly initializing spins for the grid
 lattice_elements = np.random.choice([-1,1], ROWS*COLS)
@@ -23,10 +23,10 @@ mag_history = np.zeros(steps)
 
 # initialize new lattice for the Wolff simulation
 lattice_elements_wolff = np.random.choice([-1, 1], ROWS * COLS)
-wolff_spin_history = np.zeros((steps, ROWS * COLS))
+# lattice_elements_wolff = np.array([-1, -1, -1, 1, 1, -1, -1, 1, -1])
+wolff_spin_history = np.zeros((steps, len(lattice_elements_wolff)))
 wolff_mag_history = np.zeros(steps)
 J = 1 # exchange parameter
-
 
 # making adjacency matrix for 2D grid
 adj_mat = create_adjacency_lattice(ROWS, COLS)
@@ -75,6 +75,18 @@ def calc_magnetization(spins):
 def calc_avg_mag(mag_hist):
     return np.var(mag_hist)
 
+def get_neighbors(idx, N):
+    """Returns the indices of the four neighbors of a given site in an N x N lattice."""
+    # Left neighbor (wrap-around at edges)
+    left = idx - 1 if idx % N != 0 else idx + (N - 1)
+    # Right neighbor (wrap-around at edges)
+    right = idx + 1 if idx % N != (N - 1) else idx - (N - 1)
+    # Top neighbor (wrap-around at top row)
+    top = idx - N if idx >= N else idx + (N * (N - 1))
+    # Bottom neighbor (wrap-around at bottom row)
+    bottom = idx + N if idx < N * (N - 1) else idx - (N * (N - 1))
+
+    return [left, right, top, bottom]
 
 # MAIN LOOP
 # ------------------------------------------------------------------------------
@@ -87,7 +99,7 @@ backwards_theshold = int(0.1*steps) # how many data points in the past you want 
 avg_mag = np.zeros(steps) 
 
 # inverse temperature
-beta = 0.5
+beta = 0.1
 
 # METROPOLIS LOOP
 for i in range(steps):
@@ -125,6 +137,7 @@ for i in range(steps):
     # beta := inverse temperature, J := coupling constant
     p_add = 1 - np.exp(-2 * beta * J) 
 
+
     # Boolean array to mark the spins added to the cluster
     cluster = np.zeros(L, dtype=bool)
     cluster[idx_seed] = True
@@ -134,22 +147,24 @@ for i in range(steps):
     while stack:
         idx = stack.pop()
         # get neighbor spins in a periodic boundary conditions
-        neighbors = [ (idx_seed - 3) % L, (idx_seed - 1) % L, 
-                      (idx_seed + 1) % L, (idx_seed + 3) % L ]
+        N = int(np.sqrt(L))
+        neighbors = get_neighbors(idx, N)
         for n_idx in neighbors:
             # neighbors must share the same spin and are not already in the cluster
             if (lattice_elements_wolff[n_idx] == spin_seed) and (not cluster[n_idx]):
                 if np.random.rand() < p_add:
                     cluster[n_idx] = True
                     stack.append(n_idx)
-        
-        #flip the cluster
-        lattice_elements_wolff[cluster] *= -1
+    
+    #flip the cluster after check all neighbors
+    lattice_elements_wolff[cluster] *= -1
 
-    wolff_spin_history[i] = lattice_elements_wolff
+    wolff_spin_history[i] = np.copy(lattice_elements_wolff)
     wolff_mag_history[i] = calc_magnetization(lattice_elements_wolff)
 
+
 show_snapshots(wolff_spin_history, ROWS, COLS,[0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+#show_snapshots(wolff_spin_history, ROWS, COLS, [0, int(steps/2)-1, steps-1], 1, 3)
 
 
 plt.figure()
