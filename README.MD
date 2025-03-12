@@ -5,4 +5,4 @@ model using the Kawasaki method. The result is an interesting clumping of
 spins and convergence into full seperation between spins.
 
 Here is an image of the results after 1 million steps:
-![My Image](../kawasaki.png)
+![My Image](kawasaki.png)
