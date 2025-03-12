@@ -21,7 +21,7 @@ ROWS = 50
 COLS = 50
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 100000
+steps = 1000000
 
 # randomly initializing spins for the grid
 lattice_elements = np.random.choice([-1,1], ROWS*COLS)
@@ -90,36 +90,44 @@ avg_mag = np.zeros(steps)
 # inverse temperature
 beta = 0.5
 
-# METROPOLIS LOOP
+# KAWASAKI DYNAMICS LOOP
 for i in range(steps):
-    # pick random lattice point
-    rand_ind = np.random.randint(0, len(lattice_elements))
-    # Flip spin
-    lattice_elements[rand_ind] = -lattice_elements[rand_ind]
-    # calculate new energy and change in energy
+    # Randomly pick two different lattice points
+    rand_ind1, rand_ind2 = np.random.choice(len(lattice_elements), 2, replace=False)
+
+    # Ensure the spins are different to maintain conservation
+    if lattice_elements[rand_ind1] == lattice_elements[rand_ind2]:
+        spin_history[i] = lattice_elements
+        mag_history[i] = calc_magnetization(lattice_elements)
+        continue
+
+    # Swap the spins to propose a move
+    lattice_elements[rand_ind1], lattice_elements[rand_ind2] = lattice_elements[rand_ind2], lattice_elements[rand_ind1]
+
+    # Calculate new energy and change in energy
     new_energy = calc_energy_sparse(lattice_elements, adj_mat.data, adj_mat.indices, adj_mat.indptr)
-    dE = new_energy-curr_E
+    dE = new_energy - curr_E
 
-    if dE < 0 or np.random.rand() < np.exp(-dE*beta):
-        # accept the move and update current energy
-        curr_E = new_energy
+    # Accept or reject the move using Metropolis criteria
+    if dE < 0 or np.random.rand() < np.exp(-dE * beta):
+        curr_E = new_energy  # Accept move and update energy
     else:
-        # flip spin back and keep current energy the same
-        lattice_elements[rand_ind] = -lattice_elements[rand_ind]
+        # Revert the swap if the move is rejected
+        lattice_elements[rand_ind1], lattice_elements[rand_ind2] = lattice_elements[rand_ind2], lattice_elements[rand_ind1]
 
-    # store values
+    # Store values for visualization and tracking
     spin_history[i] = lattice_elements
     mag_history[i] = calc_magnetization(lattice_elements)
 
-    # if i >= backwards_theshold:
-    #     avg_mag[i] = calc_avg_mag(mag_history[i-backwards_theshold:i])
-
-# print(mag_history)
-
-show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+# Visualization
+# show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+show_snapshots(spin_history, ROWS, COLS, [0, int(steps/10000)-1, int(steps/1000)-1, int(steps/100)-1, int(steps/10)-1, steps-1], 2, 3)
 
 plt.plot(np.arange(0, steps, 1), mag_history)
 plt.show()
+
+# Check neighbors over time
+
 
 # plt.plot(np.arange(0, steps, 1), diff_mag)
 # plt.show()

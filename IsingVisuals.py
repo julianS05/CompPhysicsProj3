@@ -25,4 +25,5 @@ def show_snapshots(state_history, grid_rows, grid_cols, indices, img_rows, img_c
         plt.title(f"Step {indices[i]+1}") 
     
     fig.tight_layout()
+    plt.pause(0.1)
     plt.show()
