@@ -9,18 +9,24 @@ from numba import jit
 # ------------------------------------------------------------------------------
 
 # grid size
-ROWS = 10
-COLS = 10
+ROWS = 20
+COLS = 20
 
 # steps to simulate (might change to keep going until equilibrium)
-steps = 3
+steps = 50000
 
 # randomly initializing spins for the grid
 lattice_elements = np.random.choice([-1,1], ROWS*COLS)
-
 # arrays to keep track of previous states
 spin_history = np.zeros((steps,ROWS*COLS))
 mag_history = np.zeros(steps)
+
+# initialize new lattice for the Wolff simulation
+lattice_elements_wolff = np.random.choice([-1, 1], ROWS * COLS)
+wolff_spin_history = np.zeros((steps, ROWS * COLS))
+wolff_mag_history = np.zeros(steps)
+J = 1 # exchange parameter
+
 
 # making adjacency matrix for 2D grid
 adj_mat = create_adjacency_lattice(ROWS, COLS)
@@ -69,42 +75,6 @@ def calc_magnetization(spins):
 def calc_avg_mag(mag_hist):
     return np.var(mag_hist)
 
-def wolff_update(lattice, adj_indices, adj_indptr):
-    # pick a random seed
-    seed = np.random.randint(0,ROWS*COLS)
-    spin_seed = lattice[seed]
-
-    # bond addition probability
-    # p_add = 1 - np.exp(-2 * beta * J)
-    p_add = 1 - np.exp(-2 * 0.5)
-    
-    # Boolean cluster to check if the lattice is in the neighbor cluster
-    in_cluster = np.zeros(ROWS*COLS, dtype=bool)
-    in_cluster[seed] = True
-    
-    # Initialize the stack with the seed ind
-    stack = np.array([seed])
-    
-    while stack.size > 0:
-        new_stack = []
-        for ind in stack:
-            # get neighbor indices using the sparse matrix
-            start = adj_indptr[ind]
-            end = adj_indptr[ind + 1]
-            neighbors = adj_indices[start:end]
-            for i in neighbors:
-                if not in_cluster[i] and lattice[i] == spin_seed:
-                    # add neighbor with probability p_add
-                    if np.random.rand() < p_add:
-                        in_cluster[i] = True
-                        new_stack.append(i)
-        # update stack
-        stack = np.array(new_stack)
-    
-    # flip all spins in the cluster
-    cluster_indices = np.where(in_cluster)[0]
-    lattice[cluster_indices] *= -1
-    return lattice
 
 # MAIN LOOP
 # ------------------------------------------------------------------------------
@@ -144,30 +114,58 @@ for i in range(steps):
     #     avg_mag[i] = calc_avg_mag(mag_history[i-backwards_theshold:i])
 
 # --- WOLFF LOOP ---
-# Reinitialize the lattice for the Wolff simulation.
-lattice_elements_wolff = np.random.choice([-1, 1], ROWS * COLS)
-wolff_spin_history = np.zeros((steps, ROWS * COLS))
-wolff_mag_history = np.zeros(steps)
 
-for i in range(steps):
-    lattice_elements_wolff = wolff_update(lattice_elements_wolff, adj_mat.indices, adj_mat.indptr)
+for i in range(steps):    
+    L = len(lattice_elements_wolff)
+    # choose a random seed spin
+    idx_seed =  np.random.randint(0, L)
+    spin_seed = lattice_elements_wolff[idx_seed]
+
+    # the add probability of algorithm
+    # beta := inverse temperature, J := coupling constant
+    p_add = 1 - np.exp(-2 * beta * J) 
+
+    # Boolean array to mark the spins added to the cluster
+    cluster = np.zeros(L, dtype=bool)
+    cluster[idx_seed] = True
+    # a growing stack of indice for spins
+    stack = [idx_seed]
+
+    while stack:
+        idx = stack.pop()
+        # get neighbor spins in a periodic boundary conditions
+        neighbors = [ (idx_seed - 3) % L, (idx_seed - 1) % L, 
+                      (idx_seed + 1) % L, (idx_seed + 3) % L ]
+        for n_idx in neighbors:
+            # neighbors must share the same spin and are not already in the cluster
+            if (lattice_elements_wolff[n_idx] == spin_seed) and (not cluster[n_idx]):
+                if np.random.rand() < p_add:
+                    cluster[n_idx] = True
+                    stack.append(n_idx)
+        
+        #flip the cluster
+        lattice_elements_wolff[cluster] *= -1
+
     wolff_spin_history[i] = lattice_elements_wolff
     wolff_mag_history[i] = calc_magnetization(lattice_elements_wolff)
 
 show_snapshots(wolff_spin_history, ROWS, COLS,[0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
 
+
 plt.figure()
-plt.plot(np.arange(steps), wolff_mag_history)
+plt.plot(np.arange(steps), wolff_mag_history, label="wolff_mag_history")
+plt.plot(np.arange(steps), mag_history, label="mag_history")
 plt.title("Wolff Magnetization")
+plt.legend()
 plt.show()
 
 
 # print(mag_history)
 
-show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
+# show_snapshots(spin_history, ROWS, COLS, [0, int(steps/5)-1, 2*int(steps/5)-1, 3*int(steps/5)-1, 4*int(steps/5)-1, steps-1], 2, 3)
 
-plt.plot(np.arange(0, steps, 1), mag_history)
-plt.show()
+# plt.plot(np.arange(0, steps, 1), mag_history)
+# plt.show()
 
 # plt.plot(np.arange(0, steps, 1), diff_mag)
 # plt.show()
