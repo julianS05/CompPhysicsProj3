@@ -17,8 +17,8 @@ from numba import jit
 # ------------------------------------------------------------------------------
 
 # grid size
-ROWS = 50
-COLS = 50
+ROWS = 10
+COLS = 10
 
 # steps to simulate (might change to keep going until equilibrium)
 steps = 1000000
